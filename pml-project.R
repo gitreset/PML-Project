@@ -25,4 +25,4 @@ sum(complete.cases(testSet))
 tst <- testSet[, colSums(is.na(testSet)) == 0]
 trn <- trainSet[, colSums(is.na(trainSet)) == 0]
 
-#
+# 
