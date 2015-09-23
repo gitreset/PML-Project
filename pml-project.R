@@ -11,11 +11,12 @@ testSet <- read.csv("./pml-testing.csv")
 
 dim(testSet)
 dim(trainSet)
-summary(testSet)
-summary(trainSet)
-names(testSet)
-names(trainSet)
-# names(testSet)[(names(testSet) == names(trainSet))]
+#summary(testSet)
+#summary(trainSet)
+#names(testSet)
+#names(trainSet)
+names(testSet)[(names(testSet) != names(trainSet))]
+names(trainSet)[(names(testSet) != names(trainSet))]
 head(trainSet)
 
 sum(complete.cases(trainSet))
