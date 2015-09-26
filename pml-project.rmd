@@ -1,0 +1,114 @@
+---
+title: Practical Machine Learning - Project Submission
+output: html_document
+---
+
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect 
+a large amount of data about personal activity relatively inexpensively. These type of 
+devices are part of the quantified self movement – a group of enthusiasts who take 
+measurements about themselves regularly to improve their health, to find patterns in 
+their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+    
+## Load & explore the data
+Let us read in and check the data from the CSV file supplied for the training and test sets. We want to look at the size (dimensions) of the data tables and also check if the columns in the training and test sets.
+
+```{r}
+trainSet <- read.csv("pml-training.csv")
+testSet <- read.csv("pml-testing.csv")
+
+dim(testSet)
+dim(trainSet)
+names(testSet)[(names(testSet) != names(trainSet))]
+names(trainSet)[(names(testSet) != names(trainSet))]
+```
+
+It appears that the "classe" and "problem_id" column are in only one data set, not both. Let's look at these two columns:
+
+```{r}
+head(testSet$problem_id)
+head(trainSet$classe)
+```
+According to the instructions provided for this project, the variable "classe" in the training set is the expected outcome of our predictive model. The test set does not have this column of data because that is what our model is expected to predict. "problem_id" appears to be simply an index of entries (rows) in the test set.
+
+##Clean the data
+
+Let us now trim down the training and test sets, getting rid of the columns that do not contain meaningful data or do not affect the results we seek. 
+
+The first seven columns in test and training sets do not have any meaningful data bearing on our planned predictive model, so let us remove these seven columns as well as columns with only "NA" values. 
+
+```{r}
+testSet2 <- testSet[,-(1:7)]
+trainSet2 <- trainSet[, -(1:7)]
+```
+
+We also want to remove all other non-numeric columns except "classe" column in the training set. For this purpose, we will save aside and restore at the end the "classe" column in the training set after removing all non-numeric data from both sets.
+
+We will also remove the columns with only "NA" values.
+
+```{r}
+testSet3 <- testSet2[, sapply(testSet2, is.numeric)]
+trainSet3 <- trainSet2[, sapply(trainSet2, is.numeric)]
+
+testSetGood <- testSet3[, colSums(is.na(testSet3)) == 0]
+trainSetGood <- trainSet3[, colSums(is.na(trainSet3)) == 0]
+trainSetGood$classe <- trainSet$classe # restore the classe column.
+dim(testSetGood)
+dim(trainSetGood)
+```
+Now we have reduced the test and training sets to a more manageable size with only the numerical data consisting of accelerometer measurements.
+
+##Create and test predictive model using the training set
+
+We divide up the training set into two partitions: training (60%) and validation (40%). This will help build and test our prediction model. Once we have a good model, we can test it against the instructor-provided test set. This report only contains the final model, skipping the various options tried before settling on the one listed below.
+
+```{r, message=FALSE, warning=FALSE}
+invisible(library(rpart))
+invisible(library(caret))
+```
+
+```{r, echo=TRUE}
+set.seed(55555)
+training_data <- createDataPartition(trainSetGood$classe, p = 0.60, list=FALSE)
+
+validationData <- trainSetGood[-training_data,]
+trainingData <- trainSetGood[training_data,]
+```
+
+The random forest model is a good solution to our problem because it is highly suitable for selecting the key features. We use the R package randomForest and try multiple way cross validation. Instead of showing all of the results, below is the code for 7-way cross validation, a good compromise for accuracy, in-sample error and computing time.
+
+Let us create the prediction model and take a look at it:
+```{r, message=FALSE, warning=FALSE}
+invisible(library(randomForest))
+predictRF <- train(classe ~ ., data=trainingData, method="rf", trControl=trainControl(method="cv", 7)) # Leave rest of the options at default values.
+predictRF
+```
+
+Applying the prediction model to the validation data set:
+```{r}
+validationResult <- predict(predictRF, validationData)
+```
+
+The validationResult vector is too large to print out for the purposes of this report. Let us calculate the statistics on this result vector ro estimate accuracy and out of sample error:
+
+```{r}
+cmat <- confusionMatrix(validationData$classe, validationResult)
+
+acc <- postResample(validationResult, validationData$classe)
+acc
+ooserr <- 1 - as.numeric(cmat$overall[1])
+ooserr
+```
+Our model has an estimaed accuracy of 99.22%. The out of sample error estimate is 0.78%.
+
+
+##Apply the prediction model to the test data set
+
+```{r}
+finalResult <- predict(predictRF, testSetGood)
+finalResult
+```
+The above values are what our predicts as to what type of exercise was done by the wearer of the accelerometer in each of the 20 test cases.
+
