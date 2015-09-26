@@ -103,7 +103,6 @@ ooserr
 ```
 Our model has an estimaed accuracy of 99.22%. The out of sample error estimate is 0.78%.
 
-
 ##Apply the prediction model to the test data set
 
 ```{r}

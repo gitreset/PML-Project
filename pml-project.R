@@ -1,6 +1,6 @@
 # Practical Machine Learning - Course Project
 
-# Just barebones R code. See the Rmd file for details.
+# This is the barebones R code. See the Rmd file for details.
 
 trainSet <- read.csv("pml-training.csv")
 testSet <- read.csv("pml-testing.csv")
